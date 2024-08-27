@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Country Information</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        table, th, td { border: 1px solid #ccc; }
+        th, td { padding: 10px; text-align: left; }
+        th { background-color: blue; }
+        input[type="text"] { margin-bottom: 20px; padding: 5px; width: 50%; }
+        #statistics { margin-top: 20px; }
+    </style>
+       <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+       <script>
+           $(document).ready(function() {
+               // Task 1: On page load, fetch and display regions
+               $.ajax({
+                   url: 'https://www.cs.kent.ac.uk/people/staff/yh/co539-A1/countryData.php?regions',
+                   method: 'GET',
+                   dataType: 'json',
+                   success: function(data) {
+                       let regionSelect = $('#regionSelect');
+                       data.forEach(function(region) {
+                           regionSelect.append(`<option value="${region}">${region}</option>`);
+                       });
+                   },
+                   error: function() {
+                       alert('Failed to load regions.');
+                   }
+               });
+   
+               // Task 2(a): On region selection, fetch and display country details
+               $('#regionSelect').change(function() {
+                   let selectedRegion = $(this).val();
+                   if (selectedRegion) {
+                       $.ajax({
+                           url: `https://www.cs.kent.ac.uk/people/staff/yh/co539-A1/countryData.php?region=${selectedRegion}`,
+                           method: 'GET',
+                           dataType: 'json',
+                           success: function(data) {
+                               let countryTable = $('#countryTable tbody');
+                               countryTable.empty();
+                               let totalPopulation = 0;
+                               let languageCount = {};
+   
+                               data.forEach(function(country) {
+                                   // Log the country object to inspect the properties
+                                   console.log(country);
+                                   
+                                   // Access correct properties
+                                   let population = country.population || 0;
+                                   let language = country.language || 'Unknown';
+   
+                                   totalPopulation += parseInt(population);
+   
+                                   countryTable.append(`
+                                       <tr>
+                                           <td><img src="${country.flag}" alt="Flag of ${country.name}" width="50"></td>
+                                           <td>${country.name}</td>
+                                           <td>${country.capital}</td>
+                                           <td>${population}</td>
+                                           <td>${language}</td>
+                                       </tr>
+                                   `);
+   
+                                   // Count languages
+                                   if (languageCount[language]) {
+                                       languageCount[language]++;
+                                   } else {
+                                       languageCount[language] = 1;
+                                   }
+                               });
+   
+                               // Task 2(b): Calculate and display statistics
+                               let averagePopulation = totalPopulation / data.length;
+                               let mostPopularLanguage = Object.keys(languageCount).reduce((a, b) => languageCount[a] > languageCount[b] ? a : b);
+   
+                               $('#statistics').html(`
+                                   <p>Average Population: ${averagePopulation.toFixed(2)}</p>
+                                   <p>Total Number of Countries: ${data.length}</p>
+                                   <p>Most Popular Language: ${mostPopularLanguage} (${languageCount[mostPopularLanguage]} countries)</p>
+                               `);
+   
+                               // Task 2(c): Implement search functionality
+                               $('#searchButton').off('click').on('click', function() {
+                                   let searchQuery = $('#searchBox').val().toLowerCase();
+                                   $('#countryTable tbody tr').each(function() {
+                                       let countryName = $(this).find('td:nth-child(2)').text().toLowerCase();
+                                       let capitalName = $(this).find('td:nth-child(3)').text().toLowerCase();
+                                       if (countryName.includes(searchQuery) || capitalName.includes(searchQuery)) {
+                                           $(this).show();
+                                       } else {
+                                           $(this).hide();
+                                       }
+                                   });
+                               });
+                           },
+                           error: function() {
+                               alert('Failed to load country data.');
+                           }
+                       });
+                   }
+               });
+           });
+       </script>
+   </head>
+   <body>
+       <h1>Country Information by Region</h1>
+   
+       <!-- Task 1: Region Selection -->
+       <label for="regionSelect">Select a Region:</label>
+       <select id="regionSelect">
+           <option value="">-- Select a Region --</option>
+       </select>
+   
+       <!-- Task 2(a): Country Details Table -->
+       <table id="countryTable">
+           <thead>
+               <tr>
+                   <th>Flag</th>
+                   <th>Name</th>
+                   <th>Capital</th>
+                   <th>Population</th>
+                   <th>Language</th>
+               </tr>
+           </thead>
+           <tbody>
+               <!-- Country data will be inserted here -->
+           </tbody>
+       </table>
+   
+       <!-- Task 2(b): Display Statistics -->
+       <div id="statistics"></div>
+   
+       <!-- Task 2(c): Search Functionality -->
+       <input type="text" id="searchBox" placeholder="Search by country name or capital">
+       <button id="searchButton">Search</button>
+   </body>
+   </html>
